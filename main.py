@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -8,153 +9,133 @@ import scipy.optimize as so
 
 
 # Венгерский алгоритм
-def HungarianAlgorithm(matrix, mode=0):
-	# в матрицу строк и столбцов записываются соответствующие индексы,
+def hungarian_algorithm(matrix, mode: int):
+	"""
+	Венгерский алгоритм
+	:param matrix: матрица к которой необходимо применить алгоритм
+	:param mode: задаёт что мы должны найти: минимум(0) или максимум(1)
+	:return: Кортеж, где 0-й элемент - max/min целевой функции (summa), а остальные n элементов - решение матрицы
+	"""
+	# В матрицу строк и столбцов записываются соответствующие индексы,
 	# из которых мы получим элементы, удовлетворяющие нашему условию (min/max)
-	if (mode == 0):
-		rowInd, colInd = so.linear_sum_assignment(matrix)
-	# print(rowInd, "&&", colInd)
-	# print("min")
+	if mode == 0:
+		row_index, col_index = so.linear_sum_assignment(matrix, maximize=False)
 	else:
-		rowInd, colInd = so.linear_sum_assignment(matrix, True)
-	# print(rowInd, "&&", colInd)
-	# print("max")
+		row_index, col_index = so.linear_sum_assignment(matrix, maximize=True)
 
-	summa = matrix[rowInd, colInd].sum()  # максимум/минимум целевой функции
-	# print(summa)
+	summa = matrix[row_index, col_index].sum()  # Максимум/минимум целевой функции
 
-	rowInd = list(rowInd)
-	colInd = list(colInd)
-	colInd2 = []
-	rowInd2 = []
+	row_index = list(row_index)
+	col_index = list(col_index)
+	col_ind_2 = []
+	row_ind_2 = []
 
-	while (len(colInd) != 0):
-		minElem = colInd[0]
+	while len(col_index) != 0:
+		min_elem = col_index[0]
 		index = 0
-		for i in range(len(colInd)):
-			if (minElem > colInd[i]):
-				minElem = colInd[i]
+		for i in range(len(col_index)):
+			if min_elem > col_index[i]:
+				min_elem = col_index[i]
 				index = i
-		colInd2.append(colInd.pop(index))
-		rowInd2.append(rowInd.pop(index))
+		col_ind_2.append(col_index.pop(index))
+		row_ind_2.append(row_index.pop(index))
 
-	col_val = [matrix[rowInd2[i], colInd2[i]] for i in range(len(colInd2))]
+	col_val = [matrix[row_ind_2[i], col_ind_2[i]] for i in range(len(col_ind_2))]
 	return summa, col_val
 
 
 # Жадный алгоритм
-def GreedyAlgorithm(matr, arr, a, b):
-	res = 0
-	resArr = [0] * (b - a)
+def greedy_algorithm(matrix, arr: list, start_column: int, end_column: int):
+	"""
+	Жадный алгоритм: в каждом столбце выбирает наибольший элемент
+	:param matrix: матрица к которой необходимо применить алгоритм
+	:param arr: массив из 0/1 в котором указывается была ли обработана строка или нет
+	:param start_column: номер столбца матрицы matrix с которого мы начнём применение алгоритма
+	:param end_column: номер столбца матрицы matrix на котором мы закончим применение алгоритма
+	:return: кортеж, где 0-й элемент - max/min целевой функции, а остальные n элементов - решение матрицы
+	"""
+	result = 0
+	result_arr = [0] * (end_column - start_column)
 	k = 0
 
-	for j in range(a, b):
-		# print("new col")
-		'''k = 0
-		while (True):
-			if (k == len(arr)): 
-				return res
-			if (arr[k] == 0):
-				maxElem = matr[k][j]
-				# print('here')
-				break
-			k += 1
-			# print(j, k)
-			# time.sleep(5)'''
-		maxElem = None
+	for j in range(start_column, end_column):
+		max_elem = None
 		for i in range(len(arr)):
-			# print("i)", arr[i], "== 0?")
-			if (arr[i] == 0):
-				# if ((matr[i][j] > maxElem) and (arr[i] == 0)):
-				if (maxElem == None or (matr[i][j] > maxElem)):
-					maxElem = matr[i][j]
+			if arr[i] == 0:
+				if (max_elem is None) or (matrix[i][j] > max_elem):
+					max_elem = matrix[i][j]
 					k = i
 
 		arr[k] = 1
-		resArr[j] = maxElem
-		res += maxElem
-	# print(*res)
-	return res, resArr
+		result_arr[j] = max_elem
+		result += max_elem
+	return result, result_arr
 
 
 # Бережливый алгоритм
-def LeanAlgorithm(matr, arr, a, b):
-	res = 0
-	resArr = [0] * (b - a)
+def lean_algorithm(matrix, arr: list, start_column: int, end_column: int):
+	"""
+	Бережливый алгоритм: в каждом столбце выбирает наименьший элемент
+	:param matrix: матрица к которой необходимо применить алгоритм
+	:param arr: массив из 0/1 в котором указывается была ли обработана строка или нет
+	:param start_column: номер столбца матрицы matrix с которого мы начнём применение алгоритма
+	:param end_column: номер столбца матрицы matrix на котором мы закончим применение алгоритма
+	:return: кортеж, где 0-й элемент - max/min целевой функции, а остальные n элементов - решение матрицы
+	"""
+	result = 0
+	result_arr = [0] * (end_column - start_column)
 	k = 0
 
-	for j in range(a, b):
-		'''k = 0
-		while (True):
-			if (k == len(arr)): 
-				return res
-			if (arr[k] == 0):
-				minElem = matr[k][j]
-				break
-			k += 1'''
-
-		minElem = None
-		# print('size =', len(arr))
+	for j in range(start_column, end_column):
+		min_elem = None
 		for i in range(len(arr)):
-			if (arr[i] == 0):
-				# if ((matr[i][j] > maxElem) and (arr[i] == 0)):
-				if (minElem == None or (matr[i][j] < minElem)):
-					minElem = matr[i][j]
+			if arr[i] == 0:
+				if (min_elem is None) or (matrix[i][j] < min_elem):
+					min_elem = matrix[i][j]
 					k = i
-
-		'''for i in range(len(arr)):
-			if ((matr[i][j] < minElem) and (arr[i] == 0)):
-				minElem = matr[i][j]
-				k = i'''
-
 		arr[k] = 1
-		resArr[j] = minElem
-		res += minElem
-	return res, resArr
+		result_arr[j] = min_elem
+		result += min_elem
+	return result, result_arr
 
 
-def LeanGreedyAlgorithm(matrix, batchCount, processingCount, split, mode=0):
-	summa = 0
-	summa1 = 0
-	summa2 = 0
-
-	matr1 = np.zeros((batchCount, processingCount))
-	matr2 = np.zeros((batchCount, processingCount))
+# Бережливо-жадный или жадно-бережливый алгоритм
+def lean_greedy_algorithm(matrix, batch_count: int, processing_count: int, split: int, mode: int):
+	"""
+	Бережливо-жадный алгоритм: применяет бережливый алгоритм к первым split-1 столбцам и жадный алгоритм к оставшимся столбцам
+	Жадно-бережливый алгоритм: применяет жадный алгоритм к первым split-1 столбцам и бережливый алгоритм к оставшимся столбцам
+	:param matrix: матрица к которой необходимо применить алгоритм
+	:param batch_count: кол-во строк матрицы matrix
+	:param processing_count: кол-во столбцов матрицы matrix
+	:param split: номер столбца с которого начнёт действовать жадный алгоритм
+	:param mode: выбор алгоритма: Ж-Б при mode=0 и Б-Ж при mode=1
+	:return: кортеж, где 0-й элемент - max/min целевой функции, а остальные n элементов - решение матрицы
+	"""
+	matrix_1 = np.zeros((batch_count, processing_count))
+	matrix_2 = np.zeros((batch_count, processing_count))
 
 	b1 = split - 1
-	b2 = processingCount - b1
+	b2 = processing_count - b1
 
-	for i in range(batchCount):
+	for i in range(batch_count):
 		for j1 in range(b1):
-			matr1[i][j1] = matrix[i][j1]
-		for j2 in range(b1, processingCount):
-			matr2[i][j2 - split + 1] = matrix[i][j2]
+			matrix_1[i][j1] = matrix[i][j1]
+		for j2 in range(b1, processing_count):
+			matrix_2[i][j2 - split + 1] = matrix[i][j2]
 
-	mark = [0] * batchCount
+	mark = [0] * batch_count
 
-	firstArr = [0] * b1
-	secondArr = [0] * b2
-
-	# print("mode =", mode)
-	if (mode == 1):
-		summa1, firstArr = LeanAlgorithm(matr1, mark, 0, b1)
-		# print("lean =", summa1)
-		# print(*mark)
-		summa2, secondArr = GreedyAlgorithm(matr2, mark, 0, b2)
-	# print("greedy =", summa2)
-	# print(*mark)
+	if mode == 1:
+		summa_1, first_arr = lean_algorithm(matrix_1, mark, 0, b1)
+		summa_2, second_arr = greedy_algorithm(matrix_2, mark, 0, b2)
 	else:
-		summa1, firstArr = GreedyAlgorithm(matr1, mark, 0, b1)
-		# print("lean =", summa1)
-		# print(*mark)
-		summa2, secondArr = LeanAlgorithm(matr2, mark, 0, b2)
-	# print("greedy =", summa2)
-	# print(*mark)
+		summa_1, first_arr = greedy_algorithm(matrix_1, mark, 0, b1)
+		summa_2, second_arr = lean_algorithm(matrix_2, mark, 0, b2)
 
-	summa = summa1 + summa2
-	colArr = firstArr + secondArr
+	summa = summa_1 + summa_2
+	col_arr = first_arr + second_arr
 
-	return summa, colArr
+	return summa, col_arr
 
 
 # def ChangeMatr(index):
