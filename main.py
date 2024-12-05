@@ -1,9 +1,7 @@
 from tkinter import *
 from tkinter import ttk
-
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import numpy as np
 import scipy.optimize as so
 
@@ -136,6 +134,13 @@ def lean_greedy_algorithm(matrix, batch_count: int, processing_count: int, split
 	col_arr = first_arr + second_arr
 
 	return summa, col_arr
+
+
+def calculate_results():
+	global ax
+	for i in range(0, N):
+		greedy_results = greedy_algorithm(MATRIX, [0 for _ in range(0, MATRIX_SIZE)], 0, MATRIX_SIZE)
+		ax.plot(np.linspace(0, 5, 5), greedy_results[1])
 
 
 # def ChangeMatr(index):
@@ -428,47 +433,53 @@ def lean_greedy_algorithm(matrix, batch_count: int, processing_count: int, split
 # 		graphics(matrix, batchCount, procCount, expCount, split)
 
 
-
 # Создаем главное окно
+
+# Константы
+# Матрица для которой мы всю задачу и решаем, взята из методички - стр. 12
+MATRIX = [[8, 4, 7, 10, 6],
+		  [7, 5, 7, 5, 6],
+		  [7, 6, 8, 8, 9],
+		  [4, 2, 7, 6, 8],
+		  [2, 4, 9, 9, 5]]
+MATRIX_SIZE = 5  # Размер матрицы
+N = 15  # Кол-во этапов (дней) эксперимента
+NU = 7
+
 root = Tk()
 root.geometry("1400x1000")
-#root.resizable(False,False)
 
-
-
-#меню ввода параметров
-params_frame = ttk.Frame(height=800,width=600,borderwidth=1,relief=GROOVE)
-params_frame.pack(anchor = NE,side = LEFT,padx=40,pady=40)
+# меню ввода параметров
+params_frame = ttk.Frame(height=800, width=600, borderwidth=1, relief=GROOVE)
+params_frame.pack(anchor=NE, side=LEFT, padx=40, pady=40)
 
 beet_batch_frame = ttk.Frame(height=150, width=180, master=params_frame)
-beet_batch_frame.grid(row = 0, column = 0, pady = 10, padx = 10)
-beet_batch_lab = ttk.Label(master=beet_batch_frame, anchor = NE, text ="Number of beet batches")
+beet_batch_frame.grid(row=0, column=0, pady=10, padx=10)
+beet_batch_lab = ttk.Label(master=beet_batch_frame, anchor=NE, text="Кол-во партий свёклы")
 beet_batch_lab.pack()
-beet_batch_ent = ttk.Entry(master = beet_batch_frame)
+beet_batch_ent = ttk.Entry(master=beet_batch_frame)
 beet_batch_ent.pack()
 
+num_experiments_frame = ttk.Frame(height=150, width=180, master=params_frame)
+num_experiments_frame.grid(row=0, column=1, padx=10, pady=10)
+num_experiments_lab = ttk.Label(master=num_experiments_frame, anchor=NE, text="Кол-во экспериментов")
+num_experiments_lab.pack()
+num_experiments_ent = ttk.Entry(master=num_experiments_frame)
+num_experiments_ent.pack()
 
-num_expiriments_frame = ttk.Frame(height=150,width=180,master=params_frame)
-num_expiriments_frame.grid(row=0,column = 1,padx =10 ,pady=10)
-num_expiriments_lab = ttk.Label(master=num_expiriments_frame, anchor = NE, text ="Number of experiments")
-num_expiriments_lab.pack()
-num_expiriments_ent = ttk.Entry(master = num_expiriments_frame)
-num_expiriments_ent.pack()
-
-
-sugar_content_frame = ttk.Frame(height=100,width=180,master=params_frame)
-sugar_content_frame.grid(columnspan = 2,sticky = EW,pady = 10,padx =10)
-sugar_content_lab = ttk.Label(master=sugar_content_frame,text = "Sugar content before processing")
+sugar_content_frame = ttk.Frame(height=100, width=180, master=params_frame)
+sugar_content_frame.grid(columnspan=2, sticky=EW, pady=10, padx=10)
+sugar_content_lab = ttk.Label(master=sugar_content_frame, text="Содержание сахара до обработки")
 sugar_content_lab.pack()
-parent_frame = ttk.Frame(master = sugar_content_frame,width=400,height=80)
-parent_frame.pack(fill=BOTH,expand=True)
-frame1 = ttk.Frame(master = parent_frame,width=100,height=40 )
-frame1.pack(side = LEFT,padx = 50)
-frame2 = ttk.Frame(master = parent_frame,width=100,height=40)
-frame2.pack(side =RIGHT,padx = 50)
+parent_frame = ttk.Frame(master=sugar_content_frame, width=400, height=80)
+parent_frame.pack(fill=BOTH, expand=True)
+frame1 = ttk.Frame(master=parent_frame, width=100, height=40)
+frame1.pack(side=LEFT, padx=50)
+frame2 = ttk.Frame(master=parent_frame, width=100, height=40)
+frame2.pack(side=RIGHT, padx=50)
 
-sugar_min_lab = ttk.Label(master=frame1,text= "min:")
-sugar_max_lab = ttk.Label(master=frame2,text= "max:")
+sugar_min_lab = ttk.Label(master=frame1, text="min:")
+sugar_max_lab = ttk.Label(master=frame2, text="max:")
 sugar_min_lab.pack()
 sugar_max_lab.pack()
 sugar_min_ent = ttk.Entry(master=frame1)
@@ -476,30 +487,28 @@ sugar_min_ent.pack()
 sugar_max_ent = ttk.Entry(master=frame2)
 sugar_max_ent.pack()
 
-
-
-effect_of_inorganic_frame = ttk.Frame(height=100,width=180,master=params_frame)
-effect_of_inorganic_frame.grid(columnspan = 2,sticky = EW,pady = 10,padx =10)
-effect_of_inorganic_lab = ttk.Label(master=effect_of_inorganic_frame,text="consider the effects of inorganics")
+effect_of_inorganic_frame = ttk.Frame(height=100, width=180, master=params_frame)
+effect_of_inorganic_frame.grid(columnspan=2, sticky=EW, pady=10, padx=10)
+effect_of_inorganic_lab = ttk.Label(master=effect_of_inorganic_frame, text="Учитывать влияние неорганики")
 # effect_of_inorganic_lab.pack()
-effect_of_inorganic_chkbtn = ttk.Checkbutton(master=effect_of_inorganic_frame,text ="consider the effects of inorganics")
+effect_of_inorganic_chkbtn = ttk.Checkbutton(master=effect_of_inorganic_frame,
+											 text="Учитывать влияние неорганики")
 effect_of_inorganic_chkbtn.pack()
 
-
-distribution_of_degradation = ttk.Frame(height=100,width=180,master=params_frame)
-distribution_of_degradation.grid(columnspan = 2,sticky = EW,pady = 10,padx =10)
-distribution_of_degradation_lab = ttk.Label(master= distribution_of_degradation,text = "Distribution of degradation")
+distribution_of_degradation = ttk.Frame(height=100, width=180, master=params_frame)
+distribution_of_degradation.grid(columnspan=2, sticky=EW, pady=10, padx=10)
+distribution_of_degradation_lab = ttk.Label(master=distribution_of_degradation, text="Распределение деградации")
 distribution_of_degradation_lab.pack()
 
-parent_frame1 = ttk.Frame(master = distribution_of_degradation,width=400,height=80)
-parent_frame1.pack(fill=BOTH,expand=True)
-frame12 = ttk.Frame(master = parent_frame1,width=100,height=40 )
-frame12.pack(side = LEFT,padx = 50)
-frame22 = ttk.Frame(master = parent_frame1,width=100,height=40)
-frame22.pack(side =RIGHT,padx = 50)
+parent_frame1 = ttk.Frame(master=distribution_of_degradation, width=400, height=80)
+parent_frame1.pack(fill=BOTH, expand=True)
+frame12 = ttk.Frame(master=parent_frame1, width=100, height=40)
+frame12.pack(side=LEFT, padx=50)
+frame22 = ttk.Frame(master=parent_frame1, width=100, height=40)
+frame22.pack(side=RIGHT, padx=50)
 
-sugar_min_lab = ttk.Label(master=frame12,text= "min:")
-sugar_max_lab = ttk.Label(master=frame22,text= "max:")
+sugar_min_lab = ttk.Label(master=frame12, text="min:")
+sugar_max_lab = ttk.Label(master=frame22, text="max:")
 sugar_min_lab.pack()
 sugar_max_lab.pack()
 sugar_min_ent = ttk.Entry(master=frame12)
@@ -507,23 +516,30 @@ sugar_min_ent.pack()
 sugar_max_ent = ttk.Entry(master=frame22)
 sugar_max_ent.pack()
 
+# результаты
+results_frame = ttk.Frame(height=400, width=700, borderwidth=1, relief=SOLID, master=root)
+results_frame.pack(side=TOP, anchor=NE, padx=100, pady=40)
 
+# график
+plot_frame = ttk.Frame(height=150, width=150, borderwidth=1, relief=SOLID, master=root)
+plot_frame.pack(side=BOTTOM, anchor=SE, padx=100, pady=40)
 
-#результаты
-resulfts_frame = ttk.Frame(height=400,width=700,borderwidth=1,relief=SOLID,master=root)
-resulfts_frame.pack(side =TOP,anchor = NE,padx=100,pady=40)
+y = np.sin(np.linspace(0, 2 * np.pi, 100))
+fig, ax = plt.subplots()
+plt.xlim(0, 5)
+plt.ylim(0, 100)
+ax.plot(np.linspace(0, 1, 100), y)
 
-#график
-plot_frame = ttk.Frame(height=150,width=150,borderwidth=1,relief=SOLID,master=root)
-plot_frame.pack(side = BOTTOM,anchor = SE,padx=100,pady=40)
-
-y = np.sin(np.linspace(0,2*np.pi,100))
-fig,ax = plt.subplots()
-ax.plot(np.linspace(0,1,100),y)
-
-canvas = FigureCanvasTkAgg(fig,master=plot_frame)
+canvas = FigureCanvasTkAgg(fig, master=plot_frame)
 canvas.draw()
-canvas.get_tk_widget().pack(anchor = SE)
+canvas.get_tk_widget().pack(anchor=SE)
+
+# Кнопка расчёта результатов
+# TODO исправить расположение кнопки :(
+button_frame = ttk.Frame(master=params_frame)
+button_frame.grid(row=1, column=0)
+btn = ttk.Button(master=button_frame, text="Рассчитать", command=calculate_results)
+btn.pack()
 
 # Запускаем главный цикл
 root.mainloop()
