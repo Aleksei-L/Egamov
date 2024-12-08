@@ -452,94 +452,128 @@ fig, ax = plt.subplots()
 #TODO добавить проверку на пустые поля и содержимое полей
 def calculate_res():
 
-	n = 10#int(beet_batch_ent.get())
-	a_min = 22#int(sugar_min_ent.get())
-	a_max = 44#int(sugar_max_ent.get())
-	b_min = 0.85
-	b_max = 1
+	n = 5 #int(beet_batch_ent.get())   #10
+	a_min = float(sugar_min_ent.get())  #22
+	a_max = float(sugar_max_ent.get())  #44
+	b_min = float(degradation_min_ent.get()) #0.85
+	b_max = float(degradation_max_ent.get())   #1
+	# print("b_min = ",b_min)
+	# print("b_max = ", b_max)
 	b_min_dozar = 1
 	b_max_dozar = 1.15
-	num_exp =10
+	num_exp = int(num_experiments_ent.get())  #5
+
+	max_hung = 0
+	min_hung = 0
+	greed = 0
+	lean = 0
+	lean_greedy = 0
+	greedy_lean = 0
+
+	for k in range(num_exp):
+		# a - вектор изначального содержания сахара в каждой партии
+		a = np.random.uniform(a_min, a_max, n)
+
+		v = 0
+		if dozarivanie_state.get():
+			# print("ДОЗАРИВАНИЕ")
+			v = np.random.randint(1, round(n / 2))
+			# print('v=', v)
+
+		# генерируем матрицу b - коэфф деградации
+		b = np.zeros((n, n - 1))
+		for i in range(0, v):
+			b[:, i] = np.random.uniform(b_min_dozar, b_max_dozar, n)
+		for i in range(v, n - 1):
+			b[:, i] = np.random.uniform(b_min, b_max, n)
+
+		# генерируем матрицу C, Cij - содеражние сахара в i партии на j этапе переработки
+		c = np.zeros((n, n))
+		c[:, 0] = a
+		for i in range(0, n - 1):
+			c[:, i + 1] = c[:, i] * b[:, i]
+
+		K = (4.8, 7.05)
+		Na = (0.21, 0.82)
+		N = (1, .58, 2.8)
+		I = (0.62, 0.64)
+
+		inorganic_matrix = np.zeros((n, n))
+		# длительность этапа - 7дней
+		# ВЛИЯНИЕ НЕОРГАНИКИ
+
+		if effect_of_inorganic.get():
+			# print("ВЛИЯНИЕ НЕОРГАНИКИ")
+			K = random.uniform(K[0], K[1])
+			Na = random.uniform(Na[0], Na[1])
+			N = random.uniform(N[0], N[1])
+			I = random.uniform(I[0], I[1])
+			I_mas = np.array([I * (1.029) ** (7 * i - 7) for i in range(0, n)])
+			I_mas[0] = I
+			for i in range(n):
+				for j in range(n):
+					# print(I_mas)
+					inorganic_matrix[i][j] = 0.1541 * (K + Na) + 0.2159 * N + 0.9989 * I_mas[j] + 0.1967
+		#через абсолютные значения
+		#c = c - inorganic_matrix
+
+		# print(c)
+		# print(inorganic_matrix[0,:])
 
 
 
-	#a - вектор изначального содержания сахара в каждой партии
-	a = np.random.uniform(a_min, a_max, n)
+		# print(inorganic_matrix[0,:])
+		# c=c - (c[:,j]*inorganic_matrix[0,:][j])/100
 
-
-	v=0
-	if dozarivanie_state.get():
-		print("ДОЗАРИВАНИЕ")
-		v = np.random.randint(1,round(n/2))
-		print('v=',v)
-
-	#генерируем матрицу b - коэфф деградации
-	b= np.zeros((n,n-1))
-	for i in range(0,v):
-		b[:,i] = np.random.uniform(b_min_dozar,b_max_dozar,n)
-	for i in range(v,n-1):
-		b[:, i] = np.random.uniform(b_min, b_max, n)
-
-	#генерируем матрицу C, Cij - содеражние сахара в i партии на j этапе переработки
-	c = np.zeros((n, n))
-	c[:, 0] = a
-	for i in range(0,n-1):
-		c[:,i+1] = c[:,i]*b[:,i]
-
-	K = (4.8,7.05)
-	Na = (0.21,0.82)
-	N = (1,.58,2.8)
-	I = (0.62,0.64)
-
-	inorganic_matrix = np.zeros((n,n))
-	#длительность этапа - 7дней
-	#ВЛИЯНИЕ НЕОРГАНИКИ
-
-	if effect_of_inorganic.get():
-		print("ВЛИЯНИЕ НЕОРГАНИКИ")
-		K = random.uniform(K[0], K[1])
-		Na = random.uniform(Na[0], Na[1])
-		N = random.uniform(N[0], N[1])
-		I = random.uniform(I[0], I[1])
-		I_mas = np.array([I*(1.029)**(7*i-7) for i in range(0,n)])
-		I_mas[0]=I
+		#через относительные значения
+		#скорее всего это правильно
 		for i in range(n):
 			for j in range(n):
-				# print(I_mas)
-				inorganic_matrix[i][j] = 0.1541*(K+Na)+0.2159*N+0.9989*I_mas[j]+0.1967
+				c[i][j] = c[i][j] - (c[i][j]*inorganic_matrix[0,:][j])/100
 
-	c = c-inorganic_matrix
-	print(c)
+		# print(c)
 
-	global ax,canvas,plt
+		global ax, canvas, plt
 
-	#вызываем алгоритмы
-	max_hung = hungarian_algorithm(c,1)[0]
-	min_hung = hungarian_algorithm(c, 0)[0]
-	greed= greedy_algorithm(c,[0 for _ in range(0, n)],0,n)[0]
-	lean = lean_algorithm(c,[0 for _ in range(0, n)],0,n)[0]
-	lean_greedy = lean_greedy_algorithm(c,n,n,round(n/2),1)[0]
-	greedy_lean = lean_greedy_algorithm(c,n,n,round(n/2),0)[0]
+
+
+
+		# вызываем алгоритмы
+		max_hung += hungarian_algorithm(c, 1)[0]
+		min_hung += hungarian_algorithm(c, 0)[0]
+		greed += greedy_algorithm(c, [0 for _ in range(0, n)], 0, n)[0]
+		lean += lean_algorithm(c, [0 for _ in range(0, n)], 0, n)[0]
+		lean_greedy += lean_greedy_algorithm(c, n, n, round(n / 2), 1)[0]
+		greedy_lean += lean_greedy_algorithm(c, n, n, round(n / 2), 0)[0]
+
+	max_hung /= num_exp
+	min_hung /= num_exp
+	greed /= num_exp
+	lean /= num_exp
+	lean_greedy /= num_exp
+	greedy_lean /= num_exp
+
+
 	plt.cla()
-	ax.bar(["max","min","жадный","бережливый","бережливо-жадный","жадно-бережливый"],[max_hung,min_hung,greed,lean,lean_greedy,greedy_lean])
+	ax.bar(["max", "min", "жадный", "бережливый", "бережливо-жадный", "жадно-бережливый"],
+		   [max_hung, min_hung, greed, lean, lean_greedy, greedy_lean])
 	ax.set_title(f"средние показатели алгоритмов за {num_exp} экспериментов")
 	plt.xticks(rotation=-10)
-	plt.ylim(min_hung-min_hung*0.03,max_hung+max_hung*0.03)
+	plt.ylim(min_hung - min_hung * 0.03, max_hung + max_hung * 0.03)
 	canvas.draw()
 	result_label.config(text=f"Потери алгоритмов относительно максимума"
-							  f"\n\nЖадный - {round((max_hung-greed)/max_hung*100,2)}%"
-							  f"\nБережливый - {round((max_hung-lean)/max_hung*100,2)}%"
-							  f"\nЖадно-бережливый - {round((max_hung-greedy_lean)/max_hung*100,2)}%"
-							  f"\nБережливо-жадный - {round((max_hung-lean_greedy)/max_hung*100,2)}%")
+							 f"\n\nЖадный - {round((max_hung - greed) / max_hung * 100, 2)}%"
+							 f"\nБережливый - {round((max_hung - lean) / max_hung * 100, 2)}%"
+							 f"\nЖадно-бережливый - {round((max_hung - greedy_lean) / max_hung * 100, 2)}%"
+							 f"\nБережливо-жадный - {round((max_hung - lean_greedy) / max_hung * 100, 2)}%")
 
+	conclusions_label.config(text = f"\n\nВыводы\n\n Лучший алгоритм - {["жадный", "бережливый", "бережливо-жадный", "жадно-бережливый"][np.argmax([ greed, lean, lean_greedy, greedy_lean])]}")
 
 
 # Создаем главное окно
 root = Tk()
 root.geometry("1600x900")
 
-s = ttk.Style()
-s.configure('TCheckbutton',font="Verdana 20 underline",background = "red")
 
 #
 left = ttk.Frame(height=800, width=600,borderwidth=1, relief=GROOVE,master=root)
@@ -604,7 +638,7 @@ sugar_max_ent.pack()
 
 distribution_of_degradation = ttk.Frame(height=100, width=180, master=params_frame)
 distribution_of_degradation.grid(columnspan=2, sticky=EW, pady=10, padx=10)
-distribution_of_degradation_lab = ttk.Label(master=distribution_of_degradation, text="Распределение деградации",font=("Arial", 14))
+distribution_of_degradation_lab = ttk.Label(master=distribution_of_degradation, text="Коэффициент деградации",font=("Arial", 14))
 distribution_of_degradation_lab.pack()
 
 effect_of_inorganic_frame = ttk.Frame(height=100, width=180, master=params_frame)
@@ -620,7 +654,7 @@ def inorg_change():
 	else:
 		effect_of_inorganic.set(1)
 effect_of_inorganic_chkbtn = Checkbutton(master=effect_of_inorganic_frame,
-											 text="Учитывать влияние неорганики",variable=effect_of_inorganic,command=inorg_change)
+											 text="Учитывать влияние неорганики",variable=effect_of_inorganic,command=inorg_change,font=("Arial", 14))
 effect_of_inorganic_chkbtn.pack()
 
 dozarivanie_state = IntVar()
@@ -629,7 +663,7 @@ def dozar_change():
 		dozarivanie_state.set(0)
 	else:
 		dozarivanie_state.set(1)
-dozarivanie = Checkbutton(master=effect_of_inorganic_frame,text="Учитывать дозаривание",variable=dozarivanie_state,command=dozar_change)
+dozarivanie = Checkbutton(master=effect_of_inorganic_frame,text="Учитывать дозаривание",variable=dozarivanie_state,command=dozar_change,font=("Arial", 14))
 dozarivanie.pack()
 
 # chbtn =
@@ -667,14 +701,14 @@ result_label = ttk.Label(text="Потери алгоритмов относит�
 							  "\nБережливый - "
 							  "\nЖадно-бережливый - "
 							  "\nБережливо-жадный - ", master=results_frame,font=("Arial", 14))
-result_label.pack()
+result_label.pack(anchor = NW)
 # result_label.config(text="qwe")
 
 # выводы
-conclusions_frame= ttk.Frame(master=results_frame,height=150, width=700)
-conclusions_frame.pack()
-conclusions_label = ttk.Label(text=f"Выводы\n\n Лучший алгоритм - {123}",master=conclusions_frame,font=("Arial", 14))
-conclusions_label.pack(fill=X)
+conclusions_frame= ttk.Frame(master=results_frame,height=150, width=300,borderwidth=2)
+conclusions_frame.pack(anchor = NW)
+conclusions_label = ttk.Label(text=f"\n\nВыводы\n\n Лучший алгоритм - ",master=conclusions_frame,font=("Arial", 14))
+conclusions_label.pack(anchor = NW)
 
 # график
 plot_frame = ttk.Frame(height=150, width=150, borderwidth=1, relief=SOLID, master=right)
@@ -694,7 +728,7 @@ canvas.get_tk_widget().pack(anchor=SE)
 # TODO исправить расположение кнопки :(   ->  (@^◡^)
 button_frame = ttk.Frame(master=params_frame)
 button_frame.grid(row=1, column=0)
-btn = ttk.Button(master=left, text="Рассчитать", command=calculate_res)
+btn = Button(master=left, text="Рассчитать", command=calculate_res,font=("Arial", 14))
 btn.pack()
 
 # Запускаем главный цикл
